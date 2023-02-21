@@ -65,5 +65,4 @@ psc_alpha = create_custom_postsynaptic_class(
     $(Isyn) += $(x);     
     """,
     var_name_types=[("x", "scalar")],
-    param_names=[("tau")],
-    is_safe_to_fuse=True)
+    param_names=[("tau")])
