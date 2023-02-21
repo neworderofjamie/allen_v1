@@ -360,7 +360,7 @@ for pop_name, genn_pops in genn_neuron_pop_dict.items():
 output_spike_df = pd.DataFrame(data={"timestamps": np.concatenate(output_spike_timestamps),
                                      "population": output_spike_pop_names,
                                      "node_ids": np.concatenate(output_spike_node_ids)})
-output_spike_df.to_csv("spikes.csv", sep=" ")
+output_spike_df.to_csv("spikes.csv", sep=" ", index=False)
 
 record_stop_time = perf_counter()
 print(f"\t{record_stop_time - record_start_time} seconds")
