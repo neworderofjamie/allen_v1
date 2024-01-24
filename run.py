@@ -6,7 +6,7 @@ import genn_models
 
 from h5py import File
 from sonata.config import SonataConfig
-from pygenn.genn_model import GeNNModel
+from pygenn import GeNNModel, init_weight_update, init_postsynaptic
 
 from collections import defaultdict, namedtuple
 from os import chdir
@@ -195,10 +195,10 @@ neuron_create_start_time = perf_counter()
 print(f"\t\t{neuron_create_start_time - edge_read_start_time} seconds")
 
 # Create model and set timestamp
-model = GeNNModel("float", "v1_point", generateSimpleErrorHandling=True)
-model.dT = cfg.dt
-model._model.set_merge_postsynaptic_models(True)
-model._model.set_default_narrow_sparse_ind_enabled(True)
+model = GeNNModel("float", "v1_point")
+model.dt = cfg.dt
+model.fuse_postsynaptic_models = True
+model.default_narrow_sparse_ind_enabled = True
 
 # Loop through node populations
 print("Creating GeNN model")
@@ -262,7 +262,7 @@ for pop_name, pops in pop_node_dict.items():
             genn_pop = model.add_neuron_population(
                 genn_pop_name, num_neurons, "SpikeSourceArray",
                 {}, {"startSpike": start_spikes, "endSpike": end_spikes})
-            genn_pop.set_extra_global_param("spikeTimes",  spike_times)
+            genn_pop.extra_global_params["spikeTimes"].set_init_values(spike_times)
 
         # Add to dictionary
         # **NOTE** indexing will be the same as pop_node_dict
@@ -300,13 +300,14 @@ for (pop_name, source_node_pop, target_node_pop), pops in pop_edge_dict.items():
 
         # Add population to model
         pop = model.add_synapse_population(
-            genn_pop_name, "SPARSE_INDIVIDUALG", delay,
+            genn_pop_name, "SPARSE",
             genn_neuron_pop_dict[source_node_pop][source_pop_id],
             genn_neuron_pop_dict[target_node_pop][target_pop_id],
-            "StaticPulse", {}, {"g": syn_weight}, {}, {},
-            genn_models.psc_alpha, {"tau": tau_syn[receptor_index - 1]}, {"x": 0.0})
+            init_weight_update("StaticPulse", {}, {"g": syn_weight}),
+            init_postsynaptic(genn_models.psc_alpha, {"tau": tau_syn[receptor_index - 1]}, {"x": 0.0}))
 
-        # Set sparse connectivity
+        # Set delay and sparse connectivity
+        pop.axonal_delay_steps = delay
         pop.set_sparse_connections(source_pop_index, target_pop_index)
 
 build_start_time = perf_counter()
@@ -349,7 +350,7 @@ for pop_name, genn_pops in genn_neuron_pop_dict.items():
         # If spike recording is enabled
         if genn_pop.spike_recording_enabled:
             # Extract spike recording data from population
-            st, sid = genn_pop.spike_recording_data
+            st, sid = genn_pop.spike_recording_data[0]
 
             # Add numpy arrays to lists
             output_spike_timestamps.append(st)
