@@ -315,8 +315,7 @@ print(f"\t\t{build_start_time - synapse_create_start_time} seconds")
 
 # Build model
 print("Building GeNN model")
-mem_usage = model.build()
-print(f"\tModel requires {mem_usage.get_device_mbytes()}MB device memory and {mem_usage.get_host_mbytes()}MB host memory")
+model.build()
 
 load_start_time = perf_counter()
 print(f"\t{load_start_time - build_start_time} seconds")
